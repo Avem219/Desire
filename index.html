@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For DJ — Success & Beyond</title>
+  
+  <!-- FAVICON (Browser Tab Icon) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2307080b'/><path d='M50 15 L62 38 L85 50 L62 62 L50 85 L38 62 L15 50 L38 38 Z' fill='%23f3cf7a'/></svg>">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+
+  <!-- Three.js for 3D Particle Scroll Explosion -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #07080b;
+      --card-bg: rgba(18, 20, 29, 0.65);
+      --card-border: rgba(212, 175, 55, 0.25);
+      --card-border-glow: rgba(212, 175, 55, 0.5);
+      --gold-primary: #f3cf7a;
+      --gold-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+      --gold-text: #e6c875;
+      --text-muted: #a0a5b5;
+      --text-light: #f1f3f9;
+      --shadow-lux: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Background Ambient Canvas */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Ambient Background Layer */
+    .bg-image-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background-image: 
+        radial-gradient(circle at 50% 30%, rgba(18, 20, 29, 0.6), rgba(7, 8, 11, 0.95)),
+        url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2000&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.35) contrast(1.2);
+    }
+
+    /* Audio Source Container */
+    #audio-container {
+      display: none;
+    }
+
+    /* Main App Layout */
+    .app-container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Glassmorphic Cards */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lux);
+      padding: 3rem 2.5rem;
+      width: 90%;
+      max-width: 720px;
+      margin: 2rem 0;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.4s ease, transform 0.4s ease;
+    }
+
+    .glass-card:hover {
+      border-color: var(--card-border-glow);
+    }
+
+    .gold-title {
+      font-family: 'Cinzel', serif;
+      background: var(--gold-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      text-align: center;
+    }
+
+    /* STAGE 1: Gatekeeper Screen */
+    #gatekeeper-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+      background: rgba(5, 6, 9, 0.94);
+      backdrop-filter: blur(35px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #gatekeeper-modal.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .gate-content {
+      text-align: center;
+      max-width: 540px;
+      width: 100%;
+    }
+
+    .gate-title {
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--gold-text);
+      margin-bottom: 1.8rem;
+      line-height: 1.6;
+      font-family: 'Cinzel', serif;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 1.1rem 1.4rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 14px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+      margin-bottom: 1.8rem;
+      text-align: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .input-field:focus {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .btn-lux {
+      background: var(--gold-gradient);
+      border: none;
+      color: #0d0e12;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 2px;
+      padding: 1.1rem 2.8rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 25px rgba(191, 149, 63, 0.3);
+      text-transform: uppercase;
+    }
+
+    .btn-lux:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(191, 149, 63, 0.5);
+      filter: brightness(1.1);
+    }
+
+    /* STAGE 2: One-Time Secret Code Modal */
+    #cipher-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 90;
+      background: rgba(5, 6, 9, 0.96);
+      backdrop-filter: blur(40px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #cipher-modal.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .cipher-box {
+      text-align: center;
+      max-width: 620px;
+    }
+
+    .cipher-notice {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #e28743;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .cipher-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      gap: 12px;
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+    }
+
+    .cipher-pair {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cipher-real {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--gold-text);
+      font-weight: bold;
+    }
+
+    .cipher-symbol {
+      font-size: 1.2rem;
+      color: var(--text-light);
+    }
+
+    /* MAIN SITE SECTIONS */
+    #main-content {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+      padding-bottom: 6rem;
+    }
+
+    #main-content.visible {
+      opacity: 1;
+    }
+
+    .header-banner {
+      margin-top: 5rem;
+      text-align: center;
+      padding: 0 1rem;
+    }
+
+    .header-banner h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-banner p {
+      color: var(--text-muted);
+      letter-spacing: 5px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    /* Image Gallery Cards */
+    .image-card-grid {
+      width: 90%;
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .img-frame {
+      width: 100%;
+      height: 230px;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-lux);
+    }
+
+    .img-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+      filter: brightness(0.8) contrast(1.15);
+    }
+
+    .img-frame:hover img {
+      transform: scale(1.08);
+      filter: brightness(1);
+    }
+
+    /* Wordy Content Styling */
+    .wishes-text {
+      font-size: 1.05rem;
+      line-height: 2.0;
+      color: #d8dbe2;
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+      text-align: justify;
+    }
+
+    .wishes-text:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Video Card Section */
+    .video-section {
+      width: 90%;
+      max-width: 720px;
+      margin: 2rem 0;
+    }
+
+    .video-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 1.8rem;
+      box-shadow: var(--shadow-lux);
+      overflow: hidden;
+    }
+
+    .video-container {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      max-height: 420px;
+      object-fit: cover;
+    }
+
+    /* FINAL SECRET ENCODED CARD */
+    .cipher-final-card {
+      width: 90%;
+      max-width: 720px;
+      margin: 3.5rem 0;
+      text-align: center;
+      background: rgba(12, 14, 21, 0.88);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      position: relative;
+    }
+
+    .cipher-final-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 25%;
+      right: 25%;
+      height: 2px;
+      background: var(--gold-gradient);
+      box-shadow: 0 0 15px var(--gold-primary);
+    }
+
+    .encoded-text-box {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.3rem;
+      letter-spacing: 5px;
+      line-height: 2.2;
+      color: var(--gold-text);
+      word-break: break-word;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 2.2rem;
+      border-radius: 16px;
+      margin-top: 1.8rem;
+      border: 1px inset rgba(212, 175, 55, 0.2);
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85);
+    }
+
+    .cipher-hint {
+      margin-top: 1.4rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-style: italic;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 2.5rem;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 640px) {
+      .header-banner h1 { font-size: 2.2rem; }
+      .image-card-grid { grid-template-columns: 1fr; }
+      .glass-card { padding: 2rem 1.6rem; }
+      .encoded-text-box { font-size: 1.05rem; letter-spacing: 3px; padding: 1.4rem; }
+      .wishes-text { font-size: 0.98rem; line-height: 1.8; text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Background Audio -->
+  <div id="audio-container">
+    <audio id="bg-audio" loop preload="auto">
+      <source src="new-music.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <div class="bg-image-layer"></div>
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="app-container">
+
+    <!-- STAGE 1: Gatekeeper Screen -->
+    <div id="gatekeeper-modal">
+      <div class="glass-card gate-content">
+        <h2 class="gate-title">OF ALL PEOPLE IN THE WORLD, WHY CHOOSE ME?</h2>
+        <input type="text" id="gate-input" class="input-field" placeholder="Write your answer..." autocomplete="off">
+        <button id="gate-btn" class="btn-lux">Unlock My Message</button>
+      </div>
+    </div>
+
+    <!-- STAGE 2: One-Time Secret Code Key Modal -->
+    <div id="cipher-modal" class="hidden">
+      <div class="glass-card cipher-box">
+        <div class="cipher-notice">✦ Secret Cipher Unlocked (Memorize Key) ✦</div>
+        <h3 class="gold-title" style="font-size: 1.25rem; margin-bottom: 0.8rem;">Alphabet Decoder Key</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+          This custom cipher key will be presented to you <strong style="color: var(--gold-text);">only once</strong> on this device. Take a moment to commit these glyphs to memory or record them—they are the key to deciphering the silence ahead.
+        </p>
+
+        <div class="cipher-grid" id="cipher-key-display"></div>
+
+        <button id="cipher-continue-btn" class="btn-lux" style="margin-top: 1rem;">Proceed To Success Card</button>
+      </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE WEBSITE -->
+    <main id="main-content">
+
+      <!-- Header Banner -->
+      <header class="header-banner">
+        <p>A Dedicated Success Card</p>
+        <h1 class="gold-title">FOR DJ</h1>
+      </header>
+
+      <!-- Glass Card 1: Expanded Wordy Narrative -->
+      <section class="glass-card">
+        <h2 class="gold-title" style="text-align: left; font-size: 1.35rem; margin-bottom: 1.5rem;">Unwavering Focus & Mastery</h2>
+        <p class="wishes-text">
+          True success is rarely an accidental spark; it is the quiet, continuous burning of dedication long after the initial excitement has faded. Watching you move through life with such steady purpose and unspoken resilience has been a masterclass in quiet elegance. You don't make noise to prove your worth—your standard of work and character simply speaks for itself.
+        </p>
+        <p class="wishes-text">
+          As you step up to meet this major milestone, remember that you aren't entering unfamiliar territory—you are entering the exact space you have painstakingly prepared for. Every late evening of focus, every silent obstacle overcome without complaint, and every disciplined choice you’ve made has brought you cleanly to this exact moment.
+        </p>
+        <p class="wishes-text">
+          Trust the depth of your preparation. You possess an instinct for excellence that cannot be taught, and a composure that allows you to thrive precisely when the stakes are highest.
+        </p>
+      </section>
+
+      <!-- Image Display Grid -->
+      <section class="image-card-grid">
+        <div class="img-frame">
+          <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=800&auto=format&fit=crop" alt="Architectural brilliance">
+        </div>
+        <div class="img-frame">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=800&auto=format&fit=crop" alt="Luminous horizon">
+        </div>
+      </section>
+
+      <!-- Glass Card 2: Expanded Personal Wishes -->
+      <section class="glass-card">
+        <h2 class="gold-title" style="text-align: left; font-size: 1.35rem; margin-bottom: 1.5rem;">Sovereign Steps Ahead</h2>
+        <p class="wishes-text">
+          My wish for you as you turn this page is simple yet absolute: May every room you walk into recognize your capability before you even speak. May every endeavor you commit to yield results that far exceed expectation, and may every challenge transform effortlessly into stepping stones toward your highest potential.
+        </p>
+        <p class="wishes-text">
+          Never minimize the quiet power you carry. In a world full of fleeting noise, your steady brilliance is a rare constant. Go forth into this next season knowing that victory isn't something you need to chase—it is simply what happens when you step up to claim what is already yours.
+        </p>
+      </section>
+
+      <!-- Glass Card 3: Embedded Video Frame -->
+      <section class="video-section">
+        <div class="video-card">
+          <h2 class="gold-title" style="font-size: 1.15rem; margin-bottom: 1.2rem; text-align: center;">✦ Success Moment ✦</h2>
+          <div class="video-container">
+            <video id="success-video" controls playsinline poster="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop">
+              <source src="success-moment.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </section>
+
+      <!-- Glass Card 4: Secret Encoded Confession -->
+      <section class="glass-card cipher-final-card">
+        <h2 class="gold-title" style="font-size: 1.25rem; letter-spacing: 2px;">✦ A Hidden Final Message ✦</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.6rem; line-height: 1.6;">
+          This message is intended strictly for you. Use the secret alphabet key revealed earlier to decipher its true meaning.
+        </p>
+
+        <div class="encoded-text-box" id="encoded-message-display"></div>
+
+        <div class="cipher-hint">Only you hold the key to decode this silence</div>
+      </section>
+
+      <footer>
+        Designed exclusively for DJ • All Rights Reserved
+      </footer>
+
+    </main>
+
+  </div>
+
+  <script>
+    /* 1. CIPHER MAPPING & ENCODING */
+    const CIPHER_MAP = {
+      'A': 'Δ', 'B': 'Ψ', 'C': 'Ϙ', 'D': 'Θ', 'E': 'Ξ',
+      'F': 'Ω', 'G': 'Φ', 'H': 'Ʃ', 'I': 'Ϧ', 'J': 'Ϟ',
+      'K': 'Ϡ', 'L': 'Λ', 'M': 'Ʊ', 'N': 'П', 'O': '⊙',
+      'P': 'Ϸ', 'Q': '϶', 'R': 'Я', 'S': '§', 'T': 'Ϯ',
+      'U': 'ƛ', 'V': 'ϯ', 'W': 'Ш', 'X': 'ϰ', 'Y': '¥', 'Z': 'ϥ'
+    };
+
+    const SECRET_PLAIN_TEXT = "I LIKE YOU";
+
+    function encodeText(text) {
+      return text.toUpperCase().split('').map(char => {
+        return CIPHER_MAP[char] || char;
+      }).join('');
+    }
+
+    const CIPHER_SHOWN_KEY = 'dj_cipher_code_has_been_shown_v1';
+
+    function buildCipherKeyGrid() {
+      const grid = document.getElementById('cipher-key-display');
+      grid.innerHTML = '';
+      Object.keys(CIPHER_MAP).slice(0, 18).forEach(letter => {
+        const pair = document.createElement('div');
+        pair.className = 'cipher-pair';
+        pair.innerHTML = `
+          <span class="cipher-real">${letter}</span>
+          <span class="cipher-symbol">${CIPHER_MAP[letter]}</span>
+        `;
+        grid.appendChild(pair);
+      });
+    }
+
+    document.getElementById('encoded-message-display').innerText = encodeText(SECRET_PLAIN_TEXT);
+
+    /* 2. GATEKEEPER & AUDIO TRIGGER */
+    const gateBtn = document.getElementById('gate-btn');
+    const gateInput = document.getElementById('gate-input');
+    const gateModal = document.getElementById('gatekeeper-modal');
+    const cipherModal = document.getElementById('cipher-modal');
+    const cipherContinueBtn = document.getElementById('cipher-continue-btn');
+    const mainContent = document.getElementById('main-content');
+    const bgAudio = document.getElementById('bg-audio');
+
+    gateBtn.addEventListener('click', () => {
+      const answer = gateInput.value.trim();
+      if (!answer) {
+        gateInput.style.borderColor = '#e74c3c';
+        return;
+      }
+
+      // Play audio on explicit user click trigger
+      bgAudio.play().catch(e => console.log("Audio play prevented:", e));
+      gateModal.classList.add('hidden');
+
+      const hasSeenCipher = localStorage.getItem(CIPHER_SHOWN_KEY);
+
+      if (!hasSeenCipher) {
+        buildCipherKeyGrid();
+        setTimeout(() => {
+          cipherModal.classList.remove('hidden');
+        }, 400);
+      } else {
+        revealMainSite();
+      }
+    });
+
+    cipherContinueBtn.addEventListener('click', () => {
+      localStorage.setItem(CIPHER_SHOWN_KEY, 'true');
+      cipherModal.classList.add('hidden');
+      revealMainSite();
+    });
+
+    function revealMainSite() {
+      setTimeout(() => {
+        mainContent.classList.add('visible');
+      }, 300);
+    }
+
+    /* 3. THREE.JS 3D LUXURY SCROLL EXPLOSION ENGINE */
+    const canvas = document.getElementById('particle-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    camera.position.z = 50;
+
+    const particleCount = 280;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const velocities = new Float32Array(particleCount * 3);
+    const originalPositions = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      const x = (Math.random() - 0.5) * 85;
+      const y = (Math.random() - 0.5) * 85;
+      const z = (Math.random() - 0.5) * 50;
+
+      positions[i] = x;
+      positions[i + 1] = y;
+      positions[i + 2] = z;
+
+      originalPositions[i] = x;
+      originalPositions[i + 1] = y;
+      originalPositions[i + 2] = z;
+
+      velocities[i] = (Math.random() - 0.5) * 0.2;
+      velocities[i + 1] = (Math.random() - 0.5) * 0.2;
+      velocities[i + 2] = (Math.random() - 0.5) * 0.2;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+      color: 0xf3cf7a,
+      size: 1.25,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particleSystem = new THREE.Points(geometry, material);
+    scene.add(particleSystem);
+
+    let lastScrollY = window.scrollY;
+    let scrollSpeed = 0;
+
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      scrollSpeed = Math.abs(currentScrollY - lastScrollY) * 0.08;
+      lastScrollY = currentScrollY;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const positionsAttr = particleSystem.geometry.attributes.position;
+      const pos = positionsAttr.array;
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        pos[i] += velocities[i];
+        pos[i + 1] += velocities[i + 1];
+        pos[i + 2] += velocities[i + 2];
+
+        if (scrollSpeed > 0.1) {
+          pos[i] += (Math.random() - 0.5) * scrollSpeed;
+          pos[i + 1] += (Math.random() - 0.5) * scrollSpeed;
+          pos[i + 2] += (Math.random() - 0.5) * scrollSpeed;
+        }
+
+        pos[i] += (originalPositions[i] - pos[i]) * 0.01;
+        pos[i + 1] += (originalPositions[i + 1] - pos[i + 1]) * 0.01;
+        pos[i + 2] += (originalPositions[i + 2] - pos[i + 2]) * 0.01;
+      }
+
+      positionsAttr.needsUpdate = true;
+      particleSystem.rotation.y += 0.001;
+      particleSystem.rotation.x += 0.0005;
+
+      scrollSpeed *= 0.92;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
