@@ -22,7 +22,6 @@
       --gold-text: #e6c875;
       --text-muted: #a0a5b5;
       --text-light: #f1f3f9;
-      --accent-rose: rgba(212, 115, 138, 0.4);
       --shadow-lux: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.12);
     }
 
@@ -531,7 +530,7 @@
         <div class="video-card">
           <h2 class="gold-title" style="font-size: 1.15rem; margin-bottom: 1.2rem; text-align: center;">✦ Success Moment ✦</h2>
           <div class="video-container">
-            <video id="success-video" controls poster="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop">
+            <video id="success-video" controls playsinline poster="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop">
               <source src="success-moment.mp4" type="video/mp4">
               Your browser does not support the video tag.
             </video>
@@ -539,7 +538,7 @@
         </div>
       </section>
 
-      <!-- Glass Card 4: Secret Encoded Confession (No Translation Offered) -->
+      <!-- Glass Card 4: Secret Encoded Confession -->
       <section class="glass-card cipher-final-card">
         <h2 class="gold-title" style="font-size: 1.25rem; letter-spacing: 2px;">✦ A Hidden Final Message ✦</h2>
         <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.6rem; line-height: 1.6;">
@@ -595,7 +594,7 @@
 
     document.getElementById('encoded-message-display').innerText = encodeText(SECRET_PLAIN_TEXT);
 
-    /* 2. GATEKEEPER & SILENT TXT EXPORT */
+    /* 2. GATEKEEPER & AUDIO TRIGGER */
     const gateBtn = document.getElementById('gate-btn');
     const gateInput = document.getElementById('gate-input');
     const gateModal = document.getElementById('gatekeeper-modal');
@@ -604,18 +603,6 @@
     const mainContent = document.getElementById('main-content');
     const bgAudio = document.getElementById('bg-audio');
 
-    function saveAnswerSilently(answerText) {
-      if (!answerText.trim()) return;
-      const blob = new Blob([`Question: OF ALL PEOPLE IN THE WORLD, WHY CHOOSE ME?\nAnswer: ${answerText}\nDate: ${new Date().toISOString()}`], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'answer.txt';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
     gateBtn.addEventListener('click', () => {
       const answer = gateInput.value.trim();
       if (!answer) {
@@ -623,7 +610,7 @@
         return;
       }
 
-      saveAnswerSilently(answer);
+      // Play audio on explicit user click trigger
       bgAudio.play().catch(e => console.log("Audio play prevented:", e));
       gateModal.classList.add('hidden');
 
